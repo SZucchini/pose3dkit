@@ -1,0 +1,23 @@
+[project]
+name = "pose3dkit"
+version = "0.1.0"
+description = "A toolkit for monocular 3D pose estimation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{ name = "SZucchini" }]
+dependencies = [
+    "matplotlib>=3.10.7",
+    "numpy<2",
+]
+
+[project.optional-dependencies]
+torch = ["torch>=2.3"]
+torchmetrics = ["torch>=2.3", "torchmetrics>=1.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pose3dkit"]
