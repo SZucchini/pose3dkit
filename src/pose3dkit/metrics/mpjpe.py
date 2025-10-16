@@ -88,10 +88,14 @@ def compute_mpjpe(
                 assert torch is not None
                 per_joint_error = per_joint_error * mask.to(per_joint_error.dtype)
             else:
-                per_joint_error = per_joint_error * mask.astype(per_joint_error.dtype, copy=False)
+                per_joint_error = per_joint_error * mask.astype(
+                    per_joint_error.dtype, copy=False
+                )
         return per_joint_error
 
-    axis_indices = tuple(sorted(shape_info.axis_names.index(axis) for axis in axes_to_reduce))
+    axis_indices = tuple(
+        sorted(shape_info.axis_names.index(axis) for axis in axes_to_reduce)
+    )
     if backend == "torch":
         return _reduce_torch(per_joint_error, weights, axis_indices, keepdims)
     return _reduce_numpy(per_joint_error, weights, axis_indices, keepdims)
@@ -131,7 +135,9 @@ def compute_p_mpjpe(
     if not axes_to_reduce:
         return per_joint_error
 
-    axis_indices = tuple(sorted(shape_info.axis_names.index(axis) for axis in axes_to_reduce))
+    axis_indices = tuple(
+        sorted(shape_info.axis_names.index(axis) for axis in axes_to_reduce)
+    )
     if backend == "torch":
         return _reduce_torch(per_joint_error, None, axis_indices, keepdims)
     return _reduce_numpy(per_joint_error, None, axis_indices, keepdims)
@@ -227,15 +233,29 @@ def n_mpjpe_loss(
     if reduction == "none" and not original_has_batch:
         raise ValueError("reduction='none' requires a batch dimension.")
 
-    compute_dtype = torch.float32 if predicted_batched.dtype == torch.bfloat16 else predicted_batched.dtype
-    predicted_for_scale = (
-        predicted_batched.to(compute_dtype) if compute_dtype != predicted_batched.dtype else predicted_batched
+    compute_dtype = (
+        torch.float32
+        if predicted_batched.dtype == torch.bfloat16
+        else predicted_batched.dtype
     )
-    target_for_scale = target_batched.to(compute_dtype) if compute_dtype != target_batched.dtype else target_batched
+    predicted_for_scale = (
+        predicted_batched.to(compute_dtype)
+        if compute_dtype != predicted_batched.dtype
+        else predicted_batched
+    )
+    target_for_scale = (
+        target_batched.to(compute_dtype)
+        if compute_dtype != target_batched.dtype
+        else target_batched
+    )
 
-    norm_predicted = torch.mean(torch.sum(predicted_for_scale**2, dim=3, keepdim=True), dim=2, keepdim=True)
+    norm_predicted = torch.mean(
+        torch.sum(predicted_for_scale**2, dim=3, keepdim=True), dim=2, keepdim=True
+    )
     norm_target = torch.mean(
-        torch.sum(target_for_scale * predicted_for_scale, dim=3, keepdim=True), dim=2, keepdim=True
+        torch.sum(target_for_scale * predicted_for_scale, dim=3, keepdim=True),
+        dim=2,
+        keepdim=True,
     )
     scale = norm_target / norm_predicted
     scaled_predicted = scale * predicted_for_scale
@@ -329,7 +349,9 @@ def velocity_loss(
 
     if predicted_batched.shape[1] <= 1:
         zero = torch.zeros(
-            (predicted_batched.shape[0],), dtype=predicted_batched.dtype, device=predicted_batched.device
+            (predicted_batched.shape[0],),
+            dtype=predicted_batched.dtype,
+            device=predicted_batched.device,
         )
         if reduction == "mean":
             return zero.mean() if original_has_batch else zero.squeeze(0)
@@ -338,11 +360,21 @@ def velocity_loss(
     velocity_predicted = predicted_batched[:, 1:] - predicted_batched[:, :-1]
     velocity_target = target_batched[:, 1:] - target_batched[:, :-1]
 
-    compute_dtype = torch.float32 if velocity_predicted.dtype == torch.bfloat16 else velocity_predicted.dtype
-    velocity_predicted = (
-        velocity_predicted.to(compute_dtype) if compute_dtype != velocity_predicted.dtype else velocity_predicted
+    compute_dtype = (
+        torch.float32
+        if velocity_predicted.dtype == torch.bfloat16
+        else velocity_predicted.dtype
     )
-    velocity_target = velocity_target.to(compute_dtype) if compute_dtype != velocity_target.dtype else velocity_target
+    velocity_predicted = (
+        velocity_predicted.to(compute_dtype)
+        if compute_dtype != velocity_predicted.dtype
+        else velocity_predicted
+    )
+    velocity_target = (
+        velocity_target.to(compute_dtype)
+        if compute_dtype != velocity_target.dtype
+        else velocity_target
+    )
 
     diff = velocity_predicted - velocity_target
     per_step = torch.norm(diff, dim=-1)
@@ -379,7 +411,9 @@ if torch is not None:
             else:
                 self.register_buffer("joint_weights", None, persistent=False)
 
-        def forward(self, predicted: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        def forward(
+            self, predicted: "torch.Tensor", target: "torch.Tensor"
+        ) -> "torch.Tensor":
             return mpjpe_loss(
                 predicted,
                 target,
@@ -395,7 +429,9 @@ if torch is not None:
             super().__init__()
             self.reduction = reduction
 
-        def forward(self, predicted: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        def forward(
+            self, predicted: "torch.Tensor", target: "torch.Tensor"
+        ) -> "torch.Tensor":
             return p_mpjpe_loss(predicted, target, reduction=self.reduction)
 
     class NMPJPELoss(torch.nn.Module):
@@ -405,7 +441,9 @@ if torch is not None:
             super().__init__()
             self.reduction = reduction
 
-        def forward(self, predicted: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        def forward(
+            self, predicted: "torch.Tensor", target: "torch.Tensor"
+        ) -> "torch.Tensor":
             return n_mpjpe_loss(predicted, target, reduction=self.reduction)
 
     class VelocityLoss(torch.nn.Module):
@@ -415,7 +453,9 @@ if torch is not None:
             super().__init__()
             self.reduction = reduction
 
-        def forward(self, predicted: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+        def forward(
+            self, predicted: "torch.Tensor", target: "torch.Tensor"
+        ) -> "torch.Tensor":
             return velocity_loss(predicted, target, reduction=self.reduction)
 
 else:
@@ -469,10 +509,14 @@ def _detect_backend(predicted: ArrayLike, target: ArrayLike) -> str:
     raise TypeError("Predicted and target must be numpy.ndarray or torch.Tensor.")
 
 
-def _validate_inputs(predicted: ArrayLike, target: ArrayLike, backend: str) -> _ShapeInfo:
+def _validate_inputs(
+    predicted: ArrayLike, target: ArrayLike, backend: str
+) -> _ShapeInfo:
     shape = tuple(predicted.shape)
     if shape != tuple(target.shape):
-        raise ValueError(f"Predicted shape {shape} must match target shape {target.shape}.")
+        raise ValueError(
+            f"Predicted shape {shape} must match target shape {target.shape}."
+        )
     if len(shape) not in (3, 4):
         raise ValueError("Expected shape (B, T, J, 3) or (T, J, 3).")
     if shape[-1] != 3:
@@ -506,7 +550,9 @@ def _validate_inputs(predicted: ArrayLike, target: ArrayLike, backend: str) -> _
     return _ShapeInfo(shape=shape[:-1], axis_names=axis_names)
 
 
-def _pairwise_distance(predicted: ArrayLike, target: ArrayLike, backend: str) -> ArrayLike:
+def _pairwise_distance(
+    predicted: ArrayLike, target: ArrayLike, backend: str
+) -> ArrayLike:
     if backend == "torch":
         assert torch is not None
         diff = predicted - target
@@ -523,14 +569,18 @@ def _pairwise_distance(predicted: ArrayLike, target: ArrayLike, backend: str) ->
     return summed
 
 
-def _procrustes_align(predicted: ArrayLike, target: ArrayLike, *, backend: str) -> ArrayLike:
+def _procrustes_align(
+    predicted: ArrayLike, target: ArrayLike, *, backend: str
+) -> ArrayLike:
     if backend == "torch":
         assert torch is not None
         return _procrustes_align_torch(predicted, target)
     return _procrustes_align_numpy(predicted, target)
 
 
-def _procrustes_align_torch(predicted: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+def _procrustes_align_torch(
+    predicted: "torch.Tensor", target: "torch.Tensor"
+) -> "torch.Tensor":
     assert torch is not None
     add_batch = False
     if predicted.ndim == 3:
@@ -541,9 +591,21 @@ def _procrustes_align_torch(predicted: "torch.Tensor", target: "torch.Tensor") -
         predicted_batched = predicted
         target_batched = target
 
-    compute_dtype = torch.float32 if predicted_batched.dtype == torch.bfloat16 else predicted_batched.dtype
-    pred = predicted_batched.to(compute_dtype) if compute_dtype != predicted_batched.dtype else predicted_batched
-    tgt = target_batched.to(compute_dtype) if compute_dtype != target_batched.dtype else target_batched
+    compute_dtype = (
+        torch.float32
+        if predicted_batched.dtype == torch.bfloat16
+        else predicted_batched.dtype
+    )
+    pred = (
+        predicted_batched.to(compute_dtype)
+        if compute_dtype != predicted_batched.dtype
+        else predicted_batched
+    )
+    tgt = (
+        target_batched.to(compute_dtype)
+        if compute_dtype != target_batched.dtype
+        else target_batched
+    )
 
     mu_x = tgt.mean(dim=2, keepdim=True)
     mu_y = pred.mean(dim=2, keepdim=True)
@@ -596,7 +658,9 @@ def _procrustes_align_numpy(predicted: np.ndarray, target: np.ndarray) -> np.nda
         predicted_batched = predicted
         target_batched = target
 
-    compute_dtype = np.float64 if predicted_batched.dtype == np.float32 else predicted_batched.dtype
+    compute_dtype = (
+        np.float64 if predicted_batched.dtype == np.float32 else predicted_batched.dtype
+    )
     pred = np.asarray(predicted_batched, dtype=compute_dtype)
     tgt = np.asarray(target_batched, dtype=compute_dtype)
 
@@ -697,7 +761,9 @@ def _prepare_weights(
     return base_np
 
 
-def _normalize_reduce_axes(reduce_axes: ReduceAxes, shape_info: _ShapeInfo) -> Tuple[str, ...]:
+def _normalize_reduce_axes(
+    reduce_axes: ReduceAxes, shape_info: _ShapeInfo
+) -> Tuple[str, ...]:
     if reduce_axes is None:
         reduce_axes = "all"
     if isinstance(reduce_axes, str):
@@ -713,11 +779,15 @@ def _normalize_reduce_axes(reduce_axes: ReduceAxes, shape_info: _ShapeInfo) -> T
 
     for axis in axes:
         if axis not in _VALID_AXIS_NAMES:
-            raise ValueError(f"Unknown axis '{axis}'. Valid axes are {_VALID_AXIS_NAMES}.")
+            raise ValueError(
+                f"Unknown axis '{axis}'. Valid axes are {_VALID_AXIS_NAMES}."
+            )
         if axis == "batch" and not shape_info.has_batch:
             raise ValueError("Batch axis is not available for (T, J, 3) inputs.")
         if axis not in shape_info.axis_names:
-            raise ValueError(f"Axis '{axis}' is not present in the current input shape.")
+            raise ValueError(
+                f"Axis '{axis}' is not present in the current input shape."
+            )
 
     seen = []
     for axis in axes:
@@ -744,7 +814,9 @@ def _reduce_torch(
         count = weights.sum(dim=axis_indices, keepdim=keepdims)
 
     if torch.any(count == 0):
-        raise ValueError("Reduction encountered zero total weight; check joint_mask/joint_weights.")
+        raise ValueError(
+            "Reduction encountered zero total weight; check joint_mask/joint_weights."
+        )
     return total / count
 
 
@@ -761,15 +833,23 @@ def _reduce_numpy(
         total = np.sum(errors, axis=axis_indices, keepdims=keepdims, dtype=errors.dtype)
         count = _numpy_count(errors, axis_indices, keepdims)
     else:
-        total = np.sum(errors * weights, axis=axis_indices, keepdims=keepdims, dtype=errors.dtype)
-        count = np.sum(weights, axis=axis_indices, keepdims=keepdims, dtype=errors.dtype)
+        total = np.sum(
+            errors * weights, axis=axis_indices, keepdims=keepdims, dtype=errors.dtype
+        )
+        count = np.sum(
+            weights, axis=axis_indices, keepdims=keepdims, dtype=errors.dtype
+        )
 
     if np.any(count == 0):
-        raise ValueError("Reduction encountered zero total weight; check joint_mask/joint_weights.")
+        raise ValueError(
+            "Reduction encountered zero total weight; check joint_mask/joint_weights."
+        )
     return total / count
 
 
-def _torch_count(tensor: "torch.Tensor", axis_indices: Tuple[int, ...], keepdims: bool) -> "torch.Tensor":
+def _torch_count(
+    tensor: "torch.Tensor", axis_indices: Tuple[int, ...], keepdims: bool
+) -> "torch.Tensor":
     count = 1
     for axis in axis_indices:
         count *= tensor.shape[axis]
@@ -782,7 +862,9 @@ def _torch_count(tensor: "torch.Tensor", axis_indices: Tuple[int, ...], keepdims
     return count_tensor
 
 
-def _numpy_count(array: np.ndarray, axis_indices: Tuple[int, ...], keepdims: bool) -> np.ndarray:
+def _numpy_count(
+    array: np.ndarray, axis_indices: Tuple[int, ...], keepdims: bool
+) -> np.ndarray:
     count = 1
     for axis in axis_indices:
         count *= array.shape[axis]
@@ -808,13 +890,17 @@ def _to_torch_broadcastable(
     else:
         tensor = torch.as_tensor(value, device=device, dtype=dtype)
     if tensor.ndim > len(target_shape):
-        raise ValueError(f"{name} has too many dimensions to broadcast to {target_shape}.")
+        raise ValueError(
+            f"{name} has too many dimensions to broadcast to {target_shape}."
+        )
     view_shape = (1,) * (len(target_shape) - tensor.ndim) + tensor.shape
     tensor = tensor.reshape(view_shape)
     try:
         return tensor.expand(target_shape)
     except RuntimeError as exc:
-        raise ValueError(f"{name} with shape {tensor.shape} cannot broadcast to {target_shape}.") from exc
+        raise ValueError(
+            f"{name} with shape {tensor.shape} cannot broadcast to {target_shape}."
+        ) from exc
 
 
 def _to_numpy_broadcastable(
@@ -826,13 +912,17 @@ def _to_numpy_broadcastable(
 ) -> np.ndarray:
     array = np.asarray(value, dtype=dtype)
     if array.ndim > len(target_shape):
-        raise ValueError(f"{name} has too many dimensions to broadcast to {target_shape}.")
+        raise ValueError(
+            f"{name} has too many dimensions to broadcast to {target_shape}."
+        )
     view_shape = (1,) * (len(target_shape) - array.ndim) + array.shape
     array = array.reshape(view_shape)
     try:
         return np.broadcast_to(array, target_shape)
     except ValueError as exc:
-        raise ValueError(f"{name} with shape {array.shape} cannot broadcast to {target_shape}.") from exc
+        raise ValueError(
+            f"{name} with shape {array.shape} cannot broadcast to {target_shape}."
+        ) from exc
 
 
 __all__ = [

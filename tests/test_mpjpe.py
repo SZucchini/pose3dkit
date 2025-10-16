@@ -65,7 +65,9 @@ def _legacy_p_mpjpe_numpy(predicted: np.ndarray, target: np.ndarray) -> np.ndarr
 
     if predicted.ndim == 3:
         return _single(predicted, target)
-    return np.stack([_single(predicted[b], target[b]) for b in range(predicted.shape[0])], axis=0)
+    return np.stack(
+        [_single(predicted[b], target[b]) for b in range(predicted.shape[0])], axis=0
+    )
 
 
 def _legacy_p_mpjpe_torch(predicted, target):
@@ -125,8 +127,12 @@ def _legacy_n_mpjpe_torch(predicted, target):
 
     assert isinstance(predicted, torch.Tensor) and isinstance(target, torch.Tensor)
     assert predicted.shape == target.shape
-    norm_predicted = torch.mean(torch.sum(predicted**2, dim=3, keepdim=True), dim=2, keepdim=True)
-    norm_target = torch.mean(torch.sum(target * predicted, dim=3, keepdim=True), dim=2, keepdim=True)
+    norm_predicted = torch.mean(
+        torch.sum(predicted**2, dim=3, keepdim=True), dim=2, keepdim=True
+    )
+    norm_target = torch.mean(
+        torch.sum(target * predicted, dim=3, keepdim=True), dim=2, keepdim=True
+    )
     scale = norm_target / norm_predicted
     return torch.mean(torch.norm(scale * predicted - target, dim=3))
 
@@ -180,7 +186,9 @@ def test_compute_mpjpe_numpy_mask_and_weights():
     masked = compute_mpjpe(predicted, target, joint_mask=mask, reduce_axes="global")
     assert np.allclose(masked, 3.0, atol=1e-6)
 
-    weighted = compute_mpjpe(predicted, target, joint_weights=weights, reduce_axes="global")
+    weighted = compute_mpjpe(
+        predicted, target, joint_weights=weights, reduce_axes="global"
+    )
     expected = (3.0 * 1.0 + 4.0 * 2.0) / (1.0 + 2.0)
     assert np.allclose(weighted, expected, atol=1e-6)
 
@@ -309,7 +317,9 @@ def test_compute_mpjpe_torch_bfloat16_support():
     assert isinstance(result_global, torch.Tensor)
     assert result_global.dtype == torch.bfloat16
 
-    reference = compute_mpjpe(predicted.to(torch.float32), target.to(torch.float32), reduce_axes="global")
+    reference = compute_mpjpe(
+        predicted.to(torch.float32), target.to(torch.float32), reduce_axes="global"
+    )
     assert torch.isclose(result_global.to(torch.float32), reference, atol=2e-2)
 
 
@@ -347,14 +357,18 @@ def test_mpjpe_loss_supports_bfloat16():
     mean_loss = mpjpe_loss(predicted, target, reduction="mean")
     assert mean_loss.dtype == torch.bfloat16
 
-    reference_mean = mpjpe_loss(predicted.to(torch.float32), target.to(torch.float32), reduction="mean")
+    reference_mean = mpjpe_loss(
+        predicted.to(torch.float32), target.to(torch.float32), reduction="mean"
+    )
     assert torch.isclose(mean_loss.to(torch.float32), reference_mean, atol=2e-2)
 
     none_loss = mpjpe_loss(predicted, target, reduction="none")
     assert none_loss.dtype == torch.bfloat16
     assert none_loss.shape == (predicted.shape[0],)
 
-    reference_none = mpjpe_loss(predicted.to(torch.float32), target.to(torch.float32), reduction="none")
+    reference_none = mpjpe_loss(
+        predicted.to(torch.float32), target.to(torch.float32), reduction="none"
+    )
     assert torch.allclose(none_loss.to(torch.float32), reference_none, atol=2e-2)
 
 
@@ -387,8 +401,12 @@ def test_p_mpjpe_loss_supports_bfloat16():
     assert none_loss.dtype == torch.bfloat16
     assert none_loss.shape == (predicted.shape[0],)
 
-    ref_mean = p_mpjpe_loss(predicted.to(torch.float32), target.to(torch.float32), reduction="mean")
-    ref_none = p_mpjpe_loss(predicted.to(torch.float32), target.to(torch.float32), reduction="none")
+    ref_mean = p_mpjpe_loss(
+        predicted.to(torch.float32), target.to(torch.float32), reduction="mean"
+    )
+    ref_none = p_mpjpe_loss(
+        predicted.to(torch.float32), target.to(torch.float32), reduction="none"
+    )
 
     assert torch.isclose(mean_loss.to(torch.float32), ref_mean, atol=2e-2)
     assert torch.allclose(none_loss.to(torch.float32), ref_none, atol=2e-2)
@@ -417,8 +435,12 @@ def test_n_mpjpe_loss_none_matches_manual():
 
     result = n_mpjpe_loss(predicted, target, reduction="none")
 
-    norm_predicted = torch.mean(torch.sum(predicted**2, dim=3, keepdim=True), dim=2, keepdim=True)
-    norm_target = torch.mean(torch.sum(target * predicted, dim=3, keepdim=True), dim=2, keepdim=True)
+    norm_predicted = torch.mean(
+        torch.sum(predicted**2, dim=3, keepdim=True), dim=2, keepdim=True
+    )
+    norm_target = torch.mean(
+        torch.sum(target * predicted, dim=3, keepdim=True), dim=2, keepdim=True
+    )
     scale = norm_target / norm_predicted
     manual = torch.norm(scale * predicted - target, dim=3).mean(dim=(1, 2))
 
@@ -433,7 +455,11 @@ def test_nmpjpe_loss_module_matches_function():
     target = torch.randn((2, 3, 4, 3), dtype=torch.float32)
 
     module = NMPJPELoss(reduction="none")
-    assert torch.allclose(module(predicted, target), n_mpjpe_loss(predicted, target, reduction="none"), atol=1e-6)
+    assert torch.allclose(
+        module(predicted, target),
+        n_mpjpe_loss(predicted, target, reduction="none"),
+        atol=1e-6,
+    )
 
 
 def test_pmpjpe_loss_module_matches_function():
@@ -444,7 +470,11 @@ def test_pmpjpe_loss_module_matches_function():
     target = torch.randn((2, 3, 4, 3), dtype=torch.float32)
 
     module = PMPJPELoss(reduction="none")
-    assert torch.allclose(module(predicted, target), p_mpjpe_loss(predicted, target, reduction="none"), atol=1e-6)
+    assert torch.allclose(
+        module(predicted, target),
+        p_mpjpe_loss(predicted, target, reduction="none"),
+        atol=1e-6,
+    )
 
 
 @pytest.mark.parametrize("dtype", ["float32", "bfloat16"])
@@ -482,8 +512,13 @@ def test_velocity_loss_short_sequence_returns_zero():
     predicted = torch.randn((2, 1, 5, 3), dtype=torch.float32)
     target = torch.randn((2, 1, 5, 3), dtype=torch.float32)
 
-    assert torch.allclose(velocity_loss(predicted, target, reduction="none"), torch.zeros(2, dtype=torch.float32))
-    assert torch.isclose(velocity_loss(predicted, target, reduction="mean"), torch.tensor(0.0))
+    assert torch.allclose(
+        velocity_loss(predicted, target, reduction="none"),
+        torch.zeros(2, dtype=torch.float32),
+    )
+    assert torch.isclose(
+        velocity_loss(predicted, target, reduction="mean"), torch.tensor(0.0)
+    )
 
 
 def test_velocity_loss_module_matches_function():
@@ -494,7 +529,11 @@ def test_velocity_loss_module_matches_function():
     target = torch.randn((3, 5, 6, 3), dtype=torch.float32)
 
     module = VelocityLoss(reduction="none")
-    assert torch.allclose(module(predicted, target), velocity_loss(predicted, target, reduction="none"), atol=1e-6)
+    assert torch.allclose(
+        module(predicted, target),
+        velocity_loss(predicted, target, reduction="none"),
+        atol=1e-6,
+    )
 
 
 def test_torchmetrics_mpjpe_metric_matches_function():
@@ -510,7 +549,8 @@ def test_torchmetrics_mpjpe_metric_matches_function():
 
     result = metric.compute()
     expected = compute_mpjpe(
-        torch.cat([predicted, predicted * 2], dim=0), torch.zeros_like(torch.cat([predicted, predicted * 2], dim=0))
+        torch.cat([predicted, predicted * 2], dim=0),
+        torch.zeros_like(torch.cat([predicted, predicted * 2], dim=0)),
     )
 
     assert torch.isclose(result, expected)

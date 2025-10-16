@@ -12,7 +12,9 @@ from ..metrics.mpjpe import compute_mpjpe, compute_p_mpjpe
 
 def _require_torchmetrics() -> None:
     if Metric is None:  # pragma: no cover - runtime guard
-        raise RuntimeError("torchmetrics is required to use pose3dkit.torchmetrics metrics.")
+        raise RuntimeError(
+            "torchmetrics is required to use pose3dkit.torchmetrics metrics."
+        )
 
 
 class MPJPE(Metric):  # type: ignore[misc]
@@ -50,7 +52,9 @@ class MPJPE(Metric):  # type: ignore[misc]
     def update(self, predicted, target) -> None:  # type: ignore[override]
         import torch
 
-        if not isinstance(predicted, torch.Tensor) or not isinstance(target, torch.Tensor):
+        if not isinstance(predicted, torch.Tensor) or not isinstance(
+            target, torch.Tensor
+        ):
             raise TypeError("MPJPE metric expects torch.Tensor inputs.")
         if predicted.shape != target.shape:
             raise ValueError(
@@ -69,7 +73,9 @@ class MPJPE(Metric):  # type: ignore[misc]
         self._output_dtype = per_joint.dtype
         # accumulate in float64 for numerical stability
         total = per_joint.sum(dtype=torch.float64)
-        count = torch.tensor(per_joint.numel(), dtype=torch.float64, device=total.device)
+        count = torch.tensor(
+            per_joint.numel(), dtype=torch.float64, device=total.device
+        )
         self.total_error += total.to(self.total_error.device)
         self.count += count.to(self.count.device)
 
@@ -107,7 +113,9 @@ class PMPJPE(Metric):  # type: ignore[misc]
     def update(self, predicted, target) -> None:  # type: ignore[override]
         import torch
 
-        if not isinstance(predicted, torch.Tensor) or not isinstance(target, torch.Tensor):
+        if not isinstance(predicted, torch.Tensor) or not isinstance(
+            target, torch.Tensor
+        ):
             raise TypeError("PMPJPE metric expects torch.Tensor inputs.")
         if predicted.shape != target.shape:
             raise ValueError(
@@ -125,7 +133,9 @@ class PMPJPE(Metric):  # type: ignore[misc]
         per_joint = compute_p_mpjpe(predicted, target, reduce_axes="none")
         self._output_dtype = per_joint.dtype
         total = per_joint.sum(dtype=torch.float64)
-        count = torch.tensor(per_joint.numel(), dtype=torch.float64, device=total.device)
+        count = torch.tensor(
+            per_joint.numel(), dtype=torch.float64, device=total.device
+        )
         self.total_error += total.to(self.total_error.device)
         self.count += count.to(self.count.device)
 

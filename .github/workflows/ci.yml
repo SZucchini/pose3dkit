@@ -24,7 +24,7 @@ jobs:
         run: uv venv
 
       - name: Install project dependencies
-        run: uv pip install ".[dev]"
+        run: uv pip install -e ".[dev,torch,torchmetrics]"
 
       - name: Ruff lint
         run: uv run ruff check .
