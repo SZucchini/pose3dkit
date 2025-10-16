@@ -1,3 +1,5 @@
+"""Top-level exports for pose3dkit metrics and TorchMetrics integrations."""
+
 from .metrics import (
     MPJPELoss,
     NMPJPELoss,
@@ -6,8 +8,8 @@ from .metrics import (
     compute_mpjpe,
     compute_p_mpjpe,
     mpjpe_loss,
-    p_mpjpe_loss,
     n_mpjpe_loss,
+    p_mpjpe_loss,
     velocity_loss,
 )
 from .torchmetrics import MPJPE as _TorchMetricsMPJPE

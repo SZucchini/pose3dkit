@@ -1,3 +1,11 @@
+"""Utilities for computing Mean Per-Joint Position Error (MPJPE) and related pose metrics.
+
+This module provides functions to compute MPJPE and Procrustes-aligned MPJPE (PA-MPJPE),
+loss helpers and torch.nn.Module wrappers for PyTorch (mpjpe_loss, p_mpjpe_loss, n_mpjpe_loss,
+velocity_loss, MPJPELoss, PMPJPELoss, NMPJPELoss, VelocityLoss), and internal helpers for
+validation, broadcasting, and reductions compatible with both numpy and torch backends.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -220,11 +228,15 @@ def n_mpjpe_loss(
         raise ValueError("reduction='none' requires a batch dimension.")
 
     compute_dtype = torch.float32 if predicted_batched.dtype == torch.bfloat16 else predicted_batched.dtype
-    predicted_for_scale = predicted_batched.to(compute_dtype) if compute_dtype != predicted_batched.dtype else predicted_batched
+    predicted_for_scale = (
+        predicted_batched.to(compute_dtype) if compute_dtype != predicted_batched.dtype else predicted_batched
+    )
     target_for_scale = target_batched.to(compute_dtype) if compute_dtype != target_batched.dtype else target_batched
 
     norm_predicted = torch.mean(torch.sum(predicted_for_scale**2, dim=3, keepdim=True), dim=2, keepdim=True)
-    norm_target = torch.mean(torch.sum(target_for_scale * predicted_for_scale, dim=3, keepdim=True), dim=2, keepdim=True)
+    norm_target = torch.mean(
+        torch.sum(target_for_scale * predicted_for_scale, dim=3, keepdim=True), dim=2, keepdim=True
+    )
     scale = norm_target / norm_predicted
     scaled_predicted = scale * predicted_for_scale
     if compute_dtype != predicted_batched.dtype:
@@ -248,7 +260,6 @@ def p_mpjpe_loss(
     reduction: str = "mean",
 ) -> "torch.Tensor":
     """Torch loss helper returning PA-MPJPE suitable for backpropagation."""
-
     if torch is None:
         raise RuntimeError("torch is required to compute p_mpjpe_loss.")
     if not isinstance(predicted, torch.Tensor) or not isinstance(target, torch.Tensor):
@@ -317,7 +328,9 @@ def velocity_loss(
         raise ValueError("reduction='none' requires a batch dimension.")
 
     if predicted_batched.shape[1] <= 1:
-        zero = torch.zeros((predicted_batched.shape[0],), dtype=predicted_batched.dtype, device=predicted_batched.device)
+        zero = torch.zeros(
+            (predicted_batched.shape[0],), dtype=predicted_batched.dtype, device=predicted_batched.device
+        )
         if reduction == "mean":
             return zero.mean() if original_has_batch else zero.squeeze(0)
         return zero
@@ -326,7 +339,9 @@ def velocity_loss(
     velocity_target = target_batched[:, 1:] - target_batched[:, :-1]
 
     compute_dtype = torch.float32 if velocity_predicted.dtype == torch.bfloat16 else velocity_predicted.dtype
-    velocity_predicted = velocity_predicted.to(compute_dtype) if compute_dtype != velocity_predicted.dtype else velocity_predicted
+    velocity_predicted = (
+        velocity_predicted.to(compute_dtype) if compute_dtype != velocity_predicted.dtype else velocity_predicted
+    )
     velocity_target = velocity_target.to(compute_dtype) if compute_dtype != velocity_target.dtype else velocity_target
 
     diff = velocity_predicted - velocity_target
@@ -383,7 +398,6 @@ if torch is not None:
         def forward(self, predicted: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
             return p_mpjpe_loss(predicted, target, reduction=self.reduction)
 
-
     class NMPJPELoss(torch.nn.Module):
         """Torch module wrapper around :func:`n_mpjpe_loss`."""
 
@@ -393,7 +407,6 @@ if torch is not None:
 
         def forward(self, predicted: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
             return n_mpjpe_loss(predicted, target, reduction=self.reduction)
-
 
     class VelocityLoss(torch.nn.Module):
         """Torch module wrapper around :func:`velocity_loss`."""
@@ -433,7 +446,6 @@ else:
 
         def forward(self, predicted, target):  # pragma: no cover - torch missing
             raise RuntimeError("torch is required to use NMPJPELoss.")
-
 
     class VelocityLoss:  # type: ignore[too-many-ancestors]
         """Placeholder raising an informative error when torch is unavailable."""

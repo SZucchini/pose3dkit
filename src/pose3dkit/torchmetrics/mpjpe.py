@@ -1,3 +1,5 @@
+"""TorchMetrics Metric implementations for MPJPE and Procrustes-aligned MPJPE."""
+
 from __future__ import annotations
 
 try:
