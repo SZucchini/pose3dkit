@@ -14,7 +14,7 @@ dependencies = [
 [project.optional-dependencies]
 torch = ["torch>=2.3"]
 torchmetrics = ["torch>=2.3", "torchmetrics>=1.4"]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.5"]
 
 [build-system]
 requires = ["hatchling"]
