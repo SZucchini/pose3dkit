@@ -12,6 +12,14 @@ from .metrics import (
     p_mpjpe_loss,
     velocity_loss,
 )
+from .normalization import (
+    denormalize_keypoints,
+    denormalize_keypoints_2d,
+    denormalize_keypoints_3d,
+    normalize_keypoints,
+    normalize_keypoints_2d,
+    normalize_keypoints_3d,
+)
 from .torchmetrics import MPJPE as _TorchMetricsMPJPE
 from .torchmetrics import PMPJPE as _TorchMetricsPMPJPE
 
@@ -31,4 +39,10 @@ __all__ = [
     "VelocityLoss",
     "MPJPE",
     "PMPJPE",
+    "normalize_keypoints",
+    "denormalize_keypoints",
+    "normalize_keypoints_2d",
+    "denormalize_keypoints_2d",
+    "normalize_keypoints_3d",
+    "denormalize_keypoints_3d",
 ]
