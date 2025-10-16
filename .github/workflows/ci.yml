@@ -2,8 +2,6 @@ name: CI
 
 on:
   push:
-    paths-ignore:
-      - "README.md"
 
 jobs:
   lint-and-test:
