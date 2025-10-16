@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    paths-ignore:
+      - "README.md"
 
 jobs:
   lint-and-test:
@@ -19,6 +21,7 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Install project dependencies
+        run: uv venv
         run: uv pip install ".[dev]"
 
       - name: Ruff lint
