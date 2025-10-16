@@ -1,6 +1,11 @@
-"""Top-level exports for pose3dkit metrics and TorchMetrics integrations."""
+"""Pose3D metric utilities.
 
-from .metrics import (
+This package exposes functions and loss classes related to Mean Per-Joint Position Error
+(MPJPE) and related pose metrics used for 3D pose estimation, including procrustes-aligned
+variants and velocity losses.
+"""
+
+from .mpjpe import (
     MPJPELoss,
     NMPJPELoss,
     PMPJPELoss,
@@ -12,11 +17,6 @@ from .metrics import (
     p_mpjpe_loss,
     velocity_loss,
 )
-from .torchmetrics import MPJPE as _TorchMetricsMPJPE
-from .torchmetrics import PMPJPE as _TorchMetricsPMPJPE
-
-MPJPE = _TorchMetricsMPJPE
-PMPJPE = _TorchMetricsPMPJPE
 
 __all__ = [
     "compute_mpjpe",
@@ -29,6 +29,4 @@ __all__ = [
     "PMPJPELoss",
     "NMPJPELoss",
     "VelocityLoss",
-    "MPJPE",
-    "PMPJPE",
 ]
